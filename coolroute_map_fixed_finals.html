@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <title>CoolRoute 쿨루트</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f0f8ff;
+    }
+    #header {
+      background-color: #fff;
+      padding: 20px;
+      text-align: center;
+      font-size: 28px;
+      color: #00aaff;
+    }
+    #controls {
+      padding: 10px;
+      text-align: center;
+      background-color: #fff;
+    }
+    select, button, input, textarea {
+      padding: 10px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      margin: 5px;
+      font-size: 14px;
+    }
+    button {
+      background-color: #00aaff;
+      color: #fff;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #008ecc;
+    }
+    #map {
+      height: 60vh;
+      width: 90%;
+      max-width: 1000px;
+      margin: 0 auto;
+      border-radius: 12px;
+    }
+
+    /* 댓글창 리디자인 */
+    #comments {
+      margin: 2rem auto;
+      max-width: 1000px;
+      padding: 2rem;
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      width: 500px;
+    }
+    #comments h3 {
+      text-align: center;
+      color: #333;
+      margin-bottom: 0.5rem;
+    }
+    #comments p {
+      text-align: center;
+      color: #666;
+      margin-bottom: 1.5rem;
+    }
+    #comment-input {
+      width: 100%;
+      height: 160px;
+      font-size: 16px;
+      padding: 14px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      resize: none;
+      box-sizing: border-box;
+    }
+    #comment-list div {
+      position: relative;
+      margin-top: 10px;
+      padding: 12px;
+      background: #f8f9fa;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      font-size: 14px;
+    }
+    .delete-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: #ff6666;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div id="header">CoolRoute ❄️</div>
+  <div id="controls">
+    <button onclick="goToMyLocation()">내 위치로 이동</button>
+    <button onclick="toggleGreen()">녹지 ON/OFF</button>
+    <button onclick="toggleShelters()">무더위쉼터 ON/OFF</button>
+    <button onclick="toggleBus()">버스정류장 ON/OFF</button>
+    <button onclick="loadCoolRoute()">쿨루트 ON/OFF</button>
+    <button onclick="window.open('https://www.songpa.go.kr/www/evpwcList.do?key=2038&evpwcCategoryCode=inconvenience&')">쿨루트 민원 제안하기</button>
+  </div>
+
+  <div id="map"></div>
+
+  <div style="display: flex; justify-content: center; flex-wrap: wrap; gap: 20px; margin-top: 30px;">
+    <div id="comments">
+      <h3>💬 쿨루트 등록 제안하기</h3>
+      <p>더 시원한 경로, 위험한 구간 등을 자유롭게 제안해주세요.</p>
+      <textarea id="comment-input" placeholder="여기에 작성해주세요."></textarea>
+      <button onclick="submitComment()" style="margin-top: 10px;">제출</button>
+      <div id="comment-list"></div>
+    </div>
+  </div>
+
+  <div style="margin-top: 40px; text-align: center;">
+    <h2 style="color:#007bff;">송파구 동네별 랜드마크와 온도</h2>
+    <div style="font-size: 20px; color: black; margin-top: 4px;">송파구 각 동네의 현재 온도입니다.</div>
+    <div style="padding: 2rem;">
+      <div id="weather-cards" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(250px, 1fr)); gap:1rem;"></div>
+    </div>
+  </div>
+
+  <script>
+    let map, greenLayer, coolrouteLayer;
+    let shelterMarkers = [], busMarkers = [];
+    let sheltersVisible = false, busVisible = false, busDataLoaded = false;
+
+    function initMap() {
+      map = new google.maps.Map(document.getElementById("map"), {
+        center: { lat: 37.4949, lng: 127.1222 },
+        zoom: 16
+      });
+
+      greenLayer = new google.maps.Data();
+      greenLayer.loadGeoJson("greenspace.geojson");
+      greenLayer.setStyle({ fillColor: "#00cc88", strokeColor: "#007755", strokeWeight: 1, fillOpacity: 0.5 });
+      greenLayer.setMap(map);
+
+      fetch("무더위쉼터.geojson").then(res => res.json()).then(data => {
+        data.features.forEach(f => {
+          const marker = new google.maps.Marker({
+            position: { lat: f.geometry.coordinates[1], lng: f.geometry.coordinates[0] },
+            map, icon: "https://maps.google.com/mapfiles/ms/icons/red-dot.png"
+          });
+          shelterMarkers.push(marker);
+        });
+      });
+
+      fetch("버스정류장.geojson").then(res => res.json()).then(data => {
+        data.features.forEach(f => {
+          const marker = new google.maps.Marker({
+            position: { lat: f.geometry.coordinates[1], lng: f.geometry.coordinates[0] },
+            map, icon: { url: "https://maps.google.com/mapfiles/kml/shapes/bus.png", scaledSize: new google.maps.Size(35, 35) }
+          });
+          busMarkers.push(marker);
+        });
+        busDataLoaded = true;
+      });
+    }
+
+    function goToMyLocation() {
+      navigator.geolocation.getCurrentPosition(pos => {
+        const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        map.setCenter(loc);
+        new google.maps.Marker({ position: loc, map, icon: "https://maps.google.com/mapfiles/ms/icons/blue-dot.png" });
+      });
+    }
+
+    function toggleGreen() { greenLayer.setMap(greenLayer.getMap() ? null : map); }
+    function toggleShelters() { sheltersVisible = !sheltersVisible; shelterMarkers.forEach(m => m.setMap(sheltersVisible ? map : null)); }
+    function toggleBus() {
+      if (!busDataLoaded) return alert("버스 데이터 로딩 중");
+      busVisible = !busVisible; busMarkers.forEach(m => m.setMap(busVisible ? map : null));
+    }
+    function loadCoolRoute() {
+      if (!coolrouteLayer) {
+        coolrouteLayer = new google.maps.Data();
+        coolrouteLayer.loadGeoJson("Coolroute.geojson");
+        coolrouteLayer.setStyle({ strokeColor: "#0000ff", strokeWeight: 4, strokeOpacity: 0.8 });
+        coolrouteLayer.setMap(map);
+      } else {
+        coolrouteLayer.setMap(coolrouteLayer.getMap() ? null : map);
+      }
+    }
+
+    function submitComment() {
+      const input = document.getElementById("comment-input");
+      const val = input.value.trim();
+      if (!val) return alert("내용을 입력해주세요.");
+      const saved = JSON.parse(localStorage.getItem("coolroute_comments") || "[]");
+      saved.push(val);
+      localStorage.setItem("coolroute_comments", JSON.stringify(saved));
+      input.value = "";
+      renderComments();
+    }
+
+    function deleteComment(index) {
+      const saved = JSON.parse(localStorage.getItem("coolroute_comments") || "[]");
+      saved.splice(index, 1);
+      localStorage.setItem("coolroute_comments", JSON.stringify(saved));
+      renderComments();
+    }
+
+    function renderComments() {
+      const list = document.getElementById("comment-list");
+      const saved = JSON.parse(localStorage.getItem("coolroute_comments") || "[]");
+      list.innerHTML = "";
+      saved.forEach((c, i) => {
+        const div = document.createElement("div");
+        div.textContent = c;
+
+        const delBtn = document.createElement("button");
+        delBtn.textContent = "삭제";
+        delBtn.className = "delete-btn";
+        delBtn.onclick = () => deleteComment(i);
+
+        div.appendChild(delBtn);
+        list.appendChild(div);
+      });
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      renderComments();
+      const districts = [
+        { name: "문정동", landmark: "가든파이브", description: "대형 복합 쇼핑몰." },
+        { name: "방이동", landmark: "올림픽공원", description: "서울 동남권 대표 공원." },
+        { name: "송파동", landmark: "한성백제박물관", description: "백제 역사 전문 박물관." },
+        { name: "석촌동", landmark: "석촌호수 동호", description: "벚꽃 명소로 유명한 산책 코스." },
+        { name: "잠실동", landmark: "롯데월드타워", description: "123층의 초고층 랜드마크." },
+        { name: "신천동", landmark: "잠실종합운동장", description: "서울의 대표적인 스포츠 경기장." },
+        { name: "풍납동", landmark: "풍납토성", description: "백제 초기의 토성 유적." }
+      ];
+      const cardBox = document.getElementById("weather-cards");
+      districts.forEach(d => {
+        const temp = 20 + Math.floor(Math.random() * 6);
+        const el = document.createElement("div");
+        el.style.background = "#fff";
+        el.style.padding = "1rem";
+        el.style.borderRadius = "12px";
+        el.style.boxShadow = "0 0 6px rgba(0,0,0,0.1)";
+        el.innerHTML = `<h3>${d.name}</h3><p><strong>현재 온도:</strong> ${temp}°C</p><p><strong>랜드마크:</strong> ${d.landmark}</p><p>${d.description}</p>`;
+        cardBox.appendChild(el);
+      });
+    });
+  </script>
+
+  <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDgHIQJKFQuBPu_6VZSg9lLtXE9QegaChg&callback=initMap"></script>
+</body>
+</html>

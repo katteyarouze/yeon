@@ -1,0 +1,17 @@
+{
+"type": "FeatureCollection",
+"name": "버스정류장_수정",
+"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+"features": [
+{ "type": "Feature", "properties": { "id": 24364, "name": "문정로데오거리입구", "roof": "y" }, "geometry": { "type": "Point", "coordinates": [ 127.120519703341046, 37.490516379980036 ] } },
+{ "type": "Feature", "properties": { "id": 24365, "name": "문정1동주민센터.로데오거리", "roof": "n" }, "geometry": { "type": "Point", "coordinates": [ 127.124309745576994, 37.490645889560284 ] } },
+{ "type": "Feature", "properties": { "id": 24367, "name": "샛별어린이공원입구", "roof": "n" }, "geometry": { "type": "Point", "coordinates": [ 127.120903577489003, 37.497597806903187 ] } },
+{ "type": "Feature", "properties": { "id": 24377, "name": "경찰병원.KT가락지사", "roof": "y" }, "geometry": { "type": "Point", "coordinates": [ 127.122352165220491, 37.495879012798007 ] } },
+{ "type": "Feature", "properties": { "id": 24372, "name": "신가초등학교", "roof": "y" }, "geometry": { "type": "Point", "coordinates": [ 127.120249216197138, 37.49877019615468 ] } },
+{ "type": "Feature", "properties": { "id": 24374, "name": "석촌중학교후문", "roof": "n" }, "geometry": { "type": "Point", "coordinates": [ 127.122973237114408, 37.499908799012488 ] } },
+{ "type": "Feature", "properties": { "id": 24401, "name": "홍이공원", "roof": "n" }, "geometry": { "type": "Point", "coordinates": [ 127.124888414715414, 37.500389365808736 ] } },
+{ "type": "Feature", "properties": { "id": 24519, "name": "가락동부센트레빌아파트", "roof": "n" }, "geometry": { "type": "Point", "coordinates": [ 127.11734603693769, 37.499275760389352 ] } },
+{ "type": "Feature", "properties": { "id": 24371, "name": "가락대림아파트", "roof": "y" }, "geometry": { "type": "Point", "coordinates": [ 127.118044759088434, 37.499644197593568 ] } },
+{ "type": "Feature", "properties": { "id": 24370, "name": "가락쌍용2차아파트", "roof": "y" }, "geometry": { "type": "Point", "coordinates": [ 127.121990231423297, 37.502331021073054 ] } }
+]
+}
