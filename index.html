@@ -136,8 +136,18 @@
     function initMap() {
       map = new google.maps.Map(document.getElementById("map"), {
         center: { lat: 37.4949, lng: 127.1222 },
-        zoom: 16
+        zoom: 15.5
       });
+
+new google.maps.Marker({
+      position: { lat: 37.535193, lng: 127.094639 },
+      map,
+      title: "동서울빌딩",
+      icon: {
+        url: "https://maps.google.com/mapfiles/kml/shapes/star.png",
+        scaledSize: new google.maps.Size(35, 35)
+      }
+    });
 
       greenLayer = new google.maps.Data();
       greenLayer.loadGeoJson("greenspace.geojson");
@@ -154,16 +164,36 @@
         });
       });
 
-      fetch("버스정류장.geojson").then(res => res.json()).then(data => {
-        data.features.forEach(f => {
-          const marker = new google.maps.Marker({
-            position: { lat: f.geometry.coordinates[1], lng: f.geometry.coordinates[0] },
-            map, icon: { url: "https://maps.google.com/mapfiles/kml/shapes/bus.png", scaledSize: new google.maps.Size(35, 35) }
-          });
-          busMarkers.push(marker);
-        });
-        busDataLoaded = true;
-      });
+  fetch("버스정류장.geojson").then(res => res.json()).then(data => {
+  data.features.forEach(f => {
+    const props = f.properties;
+    const coords = f.geometry.coordinates;
+    
+    const marker = new google.maps.Marker({
+      position: { lat: coords[1], lng: coords[0] },
+      map,
+      title: props.name || "버스정류장",
+      icon: {
+        url: "https://maps.google.com/mapfiles/kml/shapes/bus.png",
+        scaledSize: new google.maps.Size(35, 35)
+      }
+    });
+
+    const info = new google.maps.InfoWindow({
+      content: `
+        <div style="font-size:14px;">
+          <b>${props.name || "버스정류장"}</b><br>
+          지붕 유무: ${props.roof ? props.roof : "정보 없음"}
+        </div>`
+    });
+
+    marker.addListener("click", () => info.open(map, marker));
+
+    busMarkers.push(marker);
+  });
+  busDataLoaded = true;
+});
+
     }
 
     function goToMyLocation() {
