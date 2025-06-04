@@ -139,24 +139,6 @@
         zoom: 16
       });
 
-  const dongseoulMarker = new google.maps.Marker({
-    position: { lat: 37.4983477, lng: 127.1208106 },
-    map: map,  // ← 여기 꼭 있어야 함!
-    title: "동서울빌딩",
-    icon: {
-      url: "https://maps.google.com/mapfiles/kml/shapes/star.png",
-      scaledSize: new google.maps.Size(35, 35)
-    }
-  });
-
-  const dongseoulInfo = new google.maps.InfoWindow({
-    content: `<b>동서울빌딩</b><br>출발지입니다.`
-  });
-
-  dongseoulMarker.addListener("click", () => {
-    dongseoulInfo.open(map, dongseoulMarker);
-  });
-
       greenLayer = new google.maps.Data();
       greenLayer.loadGeoJson("greenspace.geojson");
       greenLayer.setStyle({ fillColor: "#00cc88", strokeColor: "#007755", strokeWeight: 1, fillOpacity: 0.5 });
