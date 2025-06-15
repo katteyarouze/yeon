@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -44,7 +45,6 @@
       border-radius: 12px;
     }
 
-    /* 댓글창 리디자인 */
     #comments {
       margin: 2rem auto;
       max-width: 1000px;
@@ -100,20 +100,22 @@
 <body>
   <div id="header">CoolRoute ❄️</div>
   <div id="controls">
+    <input type="text" id="start-point" placeholder="출발지를 입력하세요" onfocus="showRouteInfo()" />
+    <input type="text" id="end-point" placeholder="도착지를 입력하세요" onfocus="showRouteInfo()" />
     <button onclick="goToMyLocation()">내 위치로 이동</button>
     <button onclick="toggleGreen()">녹지 ON/OFF</button>
     <button onclick="toggleShelters()">무더위쉼터 ON/OFF</button>
     <button onclick="toggleBus()">버스정류장 ON/OFF</button>
     <button onclick="loadCoolRoute()">쿨루트 ON/OFF</button>
-    <button onclick="window.open('https://www.songpa.go.kr/www/evpwcList.do?key=2038&evpwcCategoryCode=inconvenience&')">쿨루트 민원 제안하기</button>
+    <button onclick="window.open('https://www.songpa.go.kr/www/evpwcList.do?key=2038&evpwcCategoryCode=inconvenience&')">송파구에 민원신고하기</button>
   </div>
 
   <div id="map"></div>
 
   <div style="display: flex; justify-content: center; flex-wrap: wrap; gap: 20px; margin-top: 30px;">
     <div id="comments">
-      <h3>💬 쿨루트 등록 제안하기</h3>
-      <p>더 시원한 경로, 위험한 구간 등을 자유롭게 제안해주세요.</p>
+      <h3>💬 쿨루트 제안하기</h3>
+      <p>쿨루트에 관련한 내용을 자유롭게 제안해주세요.</p>
       <textarea id="comment-input" placeholder="여기에 작성해주세요."></textarea>
       <button onclick="submitComment()" style="margin-top: 10px;">제출</button>
       <div id="comment-list"></div>
@@ -122,7 +124,7 @@
 
   <div style="margin-top: 40px; text-align: center;">
     <h2 style="color:#007bff;">송파구 동네별 랜드마크와 온도</h2>
-    <div style="font-size: 20px; color: black; margin-top: 4px;">송파구 각 동네의 현재 온도입니다.</div>
+    <div style="font-size: 20px; color: black; margin-top: 4px;">송파구 각 동의 실시간 온도입니다. 이동에 참고하세요!</div>
     <div style="padding: 2rem;">
       <div id="weather-cards" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(250px, 1fr)); gap:1rem;"></div>
     </div>
@@ -138,11 +140,31 @@
         center: { lat: 37.4983477, lng: 127.1222 },
         zoom: 16
       });
+ addCustomMarkers();
+    }
+    function addCustomMarkers() {
+      const subwayIcon = {
+        url: "https://maps.google.com/mapfiles/kml/shapes/rail.png",
+        scaledSize: new google.maps.Size(40, 40)
+      };
+      const stations = [
+        { name: "가락시장역", lat: 37.4930, lng: 127.1187 },
+        { name: "경찰병원역", lat: 37.4950, lng: 127.1245 },
+        { name: "오금역", lat: 37.5019, lng: 127.1283 }
+      ];
+      stations.forEach(st => {
+        new google.maps.Marker({ position: { lat: st.lat, lng: st.lng }, map, icon: subwayIcon, title: st.name });
+      });
 
       greenLayer = new google.maps.Data();
       greenLayer.loadGeoJson("greenspace.geojson");
       greenLayer.setStyle({ fillColor: "#00cc88", strokeColor: "#007755", strokeWeight: 1, fillOpacity: 0.5 });
       greenLayer.setMap(map);
+
+      coolrouteLayer = new google.maps.Data();
+      coolrouteLayer.loadGeoJson("Coolroute.geojson");
+      coolrouteLayer.setStyle({ strokeColor: "#0000ff", strokeWeight: 4, strokeOpacity: 0.8 });
+      coolrouteLayer.setMap(map);
 
       fetch("무더위쉼터.geojson").then(res => res.json()).then(data => {
         data.features.forEach(f => {
@@ -154,36 +176,30 @@
         });
       });
 
-  fetch("버스정류장.geojson").then(res => res.json()).then(data => {
-  data.features.forEach(f => {
-    const props = f.properties;
-    const coords = f.geometry.coordinates;
-    
-    const marker = new google.maps.Marker({
-      position: { lat: coords[1], lng: coords[0] },
-      map,
-      title: props.name || "버스정류장",
-      icon: {
-        url: "https://maps.google.com/mapfiles/kml/shapes/bus.png",
-        scaledSize: new google.maps.Size(35, 35)
-      }
-    });
+      fetch("버스정류장.geojson").then(res => res.json()).then(data => {
+        data.features.forEach(f => {
+          const props = f.properties;
+          const coords = f.geometry.coordinates;
 
-    const info = new google.maps.InfoWindow({
-      content: `
-        <div style="font-size:14px;">
-          <b>${props.name || "버스정류장"}</b><br>
-          지붕 유무: ${props.roof ? props.roof : "정보 없음"}
-        </div>`
-    });
+          const marker = new google.maps.Marker({
+            position: { lat: coords[1], lng: coords[0] },
+            map,
+            title: props.name || "버스정류장",
+            icon: {
+              url: "https://maps.google.com/mapfiles/kml/shapes/bus.png",
+              scaledSize: new google.maps.Size(35, 35)
+            }
+          });
 
-    marker.addListener("click", () => info.open(map, marker));
+          const info = new google.maps.InfoWindow({
+            content: `<div style="font-size:14px;"><b>${props.name || "버스정류장"}</b><br>지붕 유무: ${props.roof || "정보 없음"}</div>`
+          });
 
-    busMarkers.push(marker);
-  });
-  busDataLoaded = true;
-});
-
+          marker.addListener("click", () => info.open(map, marker));
+          busMarkers.push(marker);
+        });
+        busDataLoaded = true;
+      });
     }
 
     function goToMyLocation() {
@@ -210,7 +226,6 @@
         coolrouteLayer.setMap(coolrouteLayer.getMap() ? null : map);
       }
     }
-
     function submitComment() {
       const input = document.getElementById("comment-input");
       const val = input.value.trim();
@@ -221,14 +236,12 @@
       input.value = "";
       renderComments();
     }
-
     function deleteComment(index) {
       const saved = JSON.parse(localStorage.getItem("coolroute_comments") || "[]");
       saved.splice(index, 1);
       localStorage.setItem("coolroute_comments", JSON.stringify(saved));
       renderComments();
     }
-
     function renderComments() {
       const list = document.getElementById("comment-list");
       const saved = JSON.parse(localStorage.getItem("coolroute_comments") || "[]");
@@ -236,12 +249,10 @@
       saved.forEach((c, i) => {
         const div = document.createElement("div");
         div.textContent = c;
-
         const delBtn = document.createElement("button");
         delBtn.textContent = "삭제";
         delBtn.className = "delete-btn";
         delBtn.onclick = () => deleteComment(i);
-
         div.appendChild(delBtn);
         list.appendChild(div);
       });
@@ -272,6 +283,12 @@
     });
   </script>
 
+
+    function showRouteInfo() {
+      alert("쿨루트는 현재 자동 추천 경로 기반으로 제공됩니다. 지도를 참고해주세요!");
+    }
+    document.addEventListener("DOMContentLoaded", renderComments);
+  </script>
   <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDgHIQJKFQuBPu_6VZSg9lLtXE9QegaChg&callback=initMap"></script>
 </body>
 </html>
